@@ -97,7 +97,7 @@ sub get_item ($self, $item_str, $arg={}) {
 
   open(my $proc, '-|', @op_command) or Carp::croak("can't spawn op: $!");
 
-  my $json = <$proc>;
+  my $json = join q{}, <$proc>;
 
   # TODO: Log $? and $!, do something better. -- rjbs, 2024-05-03
   close($proc) or Carp::croak("problem running $proc");
@@ -135,7 +135,7 @@ sub get_field ($self, $field_ref_str) {
 
   open(my $proc, '-|', @op_command) or Carp::croak("can't spawn op: $!");
 
-  my $str = <$proc>;
+  my $str = join q{}, <$proc>;
 
   # TODO: Log $? and $!, do something better. -- rjbs, 2024-05-03
   close($proc) or Carp::croak("problem running $proc");
