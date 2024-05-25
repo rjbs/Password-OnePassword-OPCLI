@@ -82,7 +82,7 @@ sub get_item ($self, $item_str, $arg={}) {
   if ($item_str =~ m{\Aop://([^/]+)/([^/]+)/?\z}) {
     $vault = $1;
     $item  = $2;
-  } elsif ($item =~ m{\Aop:}) {
+  } elsif ($item_str =~ m{\Aop:}) {
     Carp::croak("The given item id looks like an op: URL, but isn't in the format op://VAULT/ITEM");
   } else {
     $item = $item_str;
