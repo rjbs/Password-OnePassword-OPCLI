@@ -120,12 +120,25 @@ can't find the field, if it can't authenticate, or in any case other than
 =cut
 
 sub get_field ($self, $field_ref_str) {
+  $self->_call_op_read_for_field_ref($field_ref_str);
+}
+
+sub _call_op_read_for_field_ref ($self, $field_ref_str, $arg = {}) {
   unless (length $field_ref_str) {
     Carp::croak('required argument $field_ref_str was empty');
   }
 
-  if ($field_ref_str =~ /^-/) {
-    Carp::croak('$field_ref_str starts with a dash, which is not permitted');
+  unless ($field_ref_str =~ m{\Aop://}) {
+    Carp::croak('$field_ref_str does not appear to be an op:// URL');
+  }
+
+  # I don't like this.  The problem, *in part*, is that you can't just pass the
+  # op:// URI through URI.pm, because its ->as_string will encode spaces to
+  # %20, but that isn't permitted in "op read".  This probably has a better
+  # workaround, but the goal right now is just to make the method work.
+  # -- rjbs, 2024-06-09
+  if ($arg->{attribute}) {
+    $field_ref_str .= "?attribute=$arg->{attribute}";
   }
 
   my @op_command = (
@@ -142,6 +155,28 @@ sub get_field ($self, $field_ref_str) {
 
   chomp $str;
   return $str;
+}
+
+=method get_otp
+
+  my $otp = $one_pw->get_otp($field_ref_str);
+
+This looks up an item in 1Password, using the C<op read> command.  The item is
+assumed to be an OTP-type field.  Instead of returning the field's value, which
+would be the TOTP secret, this method will return the one-time password for the
+current time.
+
+If it can't find the field, if the field isn't an OTP field, if it can't
+authenticate, or in any case other than "everything worked", the library will
+raise an exception.
+
+=cut
+
+sub get_otp ($self, $field_ref_str) {
+  $self->_call_op_read_for_field_ref($field_ref_str, {
+    # This is stupid, see _call_op_read_for_field_ref.
+    attribute => 'otp',
+  });
 }
 
 1;
