@@ -241,7 +241,24 @@ package Password::OnePassword::OPCLI::Locator {
       $item  = $2;
       $field = $3;
     } elsif ($str =~ m{\Aopcli:}) {
-      # ...
+      # This does not provide any means to cope with ":" appearing in a value.
+      # I'll come back to that. -- rjbs, 2024-08-18
+      #
+      # opcli:a=${Account}:v=${Vault}:i=${Item}:f=${Field}
+      my (undef, @hunks) = split /:/, $str;
+      my %got;
+      state %known_k = map {; $_ => 1 } qw(a v i f);
+
+      for my $hunk (@hunks) {
+        my ($k, $v) = split /=/, $hunk, 2;
+        $known_k{$k}    || Carp::croak("unknown key in 1Password locator: $hunk");
+        exists $got{$k} && Carp::croak("saw $k= twice in 1Password locator");
+        length $v       || Carp::croak("empty $k= value in 1Password locator");
+
+        $got{$k} = $v;
+      }
+
+      ($account, $vault, $item, $field) = @got{ qw( a v i f ) };
     } else {
       $item = $str;
     }
