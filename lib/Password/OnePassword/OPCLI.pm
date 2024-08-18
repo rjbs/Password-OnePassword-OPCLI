@@ -201,8 +201,8 @@ OPCLI-specific string like this:
 
   opcli:a=${Account}:v=${Vault}:i=${Item}:f=${Field}
 
-Order is not important and only the item field is required.  To represent the
-URL above (C<op://Private/Super Mario Fan Club/password>) in this format,
+Order is not important and only the item property is required.  To represent
+the URL above (C<op://Private/Super Mario Fan Club/password>) in this format,
 you'd write:
 
   opcli:v=Private:i=Super Mario Fan Club:f=password
@@ -212,11 +212,17 @@ on the end:
 
   opcli:v=Private:i=Super Mario Fan Club:f=password:a=Personal
 
+The value of property will be URI-decoded before use.  This won't matter,
+generally, but you'll need to know if it you want to use locators with C<%> or
+C<:> in property values, at least.
+
 =cut
 
 package Password::OnePassword::OPCLI::Locator {
   use Moo;
   use v5.36.0;
+
+  use URI::Escape ();
 
   has account => (is => 'ro');
   has vault   => (is => 'ro');
@@ -241,9 +247,6 @@ package Password::OnePassword::OPCLI::Locator {
       $item  = $2;
       $field = $3;
     } elsif ($str =~ m{\Aopcli:}) {
-      # This does not provide any means to cope with ":" appearing in a value.
-      # I'll come back to that. -- rjbs, 2024-08-18
-      #
       # opcli:a=${Account}:v=${Vault}:i=${Item}:f=${Field}
       my (undef, @hunks) = split /:/, $str;
       my %got;
@@ -258,7 +261,9 @@ package Password::OnePassword::OPCLI::Locator {
         $got{$k} = $v;
       }
 
-      ($account, $vault, $item, $field) = @got{ qw( a v i f ) };
+      ($account, $vault, $item, $field)
+        = map {; length $_ ? URI::Escape::uri_unescape($_) : $_ }
+          @got{ qw( a v i f ) };
     } else {
       $item = $str;
     }
